@@ -24,8 +24,11 @@ names(pop2)=c("X","Y")
 n=100
 
 
-#' Direct Method
-Direct=function(pop,n,tau)
+#' Direct Method and
+#' We wan to use difference estimator 
+#' Difference estimator also use the auxilary information\
+#' So we want to compare with callibartion method
+compare=function(pop,n,tau)
 {
   N=dim(pop)[1]
   rho=cor(pop)[1,2]
@@ -35,17 +38,34 @@ Direct=function(pop,n,tau)
     r.regression=rq(Y~X-1,tau=tau,data=A,weights=weights)
     y.hat=r.regression$coef*A[,1]
     y=sapply(A[,1],function(x) qnorm(tau,mean=rho*x,sd=sqrt(1-rho^2)))
-    sum((y-y.hat)^2)/n
+    mse1=sum((y-y.hat)^2)/n
+    y.hat2=y.hat+(mean(r.regression$coef*pop[,1])-mean(y.hat))
+    mse2=sum((y-y.hat2)^2)/n
+    return(c(mse1,mse2))
   })
   
-  mean(D)
+  apply(D,1,mean)
 }
 
 tau=c(0.1,0.3,0.5,0.7,0.9)
-mse.d1=sapply(tau,function(tau) Direct(pop1,n,tau))
-mse.d2=sapply(tau,function(tau) Direct(pop2,n,tau))
+mse.d1=sapply(tau,function(tau) compare(pop1,n,tau))
+mse.d2=sapply(tau,function(tau) compare(pop2,n,tau))
 
 
+
+
+
+
+diff.estimator=function(pop,n,tau)
+{
+  N=dim(pop)[1]
+  
+  
+  
+  
+  
+  
+}
 
 
 

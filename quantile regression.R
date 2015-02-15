@@ -22,3 +22,32 @@ names(pop2)=c("X","Y")
 
 #'To use simple random sampling to get n=100 sample
 n=100
+
+
+#' Direct Method
+Direct=function(pop,n,tau)
+{
+  N=dim(pop)[1]
+  rho=cor(pop)[1,2]
+  D=sapply(1:1000,function(o) {
+    A=pop[sample(1:N,n,replace=FALSE),]
+    weights=rep(N/n,n)
+    r.regression=rq(Y~X-1,tau=tau,data=A,weights=weights)
+    y.hat=r.regression$coef*A[,1]
+    y=sapply(A[,1],function(x) qnorm(tau,mean=rho*x,sd=sqrt(1-rho^2)))
+    sum((y-y.hat)^2)/n
+  })
+  
+  mean(D)
+}
+
+tau=c(0.1,0.3,0.5,0.7,0.9)
+mse.d1=sapply(tau,function(tau) Direct(pop1,n,tau))
+mse.d2=sapply(tau,function(tau) Direct(pop2,n,tau))
+
+
+
+
+
+
+

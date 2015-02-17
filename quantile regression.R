@@ -1,5 +1,6 @@
 library(quantreg)
 library(mvtnorm)
+library(plyr)
 #'The simulation studies were conducted to compare the performance of calibrated
 #' quantile estimator to those of direct estimator and difference estimator.
 #' Two finite populations of size N = 1000 were generated from bivariate
@@ -23,49 +24,59 @@ names(pop2)=c("X","Y")
 #'To use simple random sampling to get n=100 sample
 n=100
 
+#' Use weights to get the quantile for tau
+#' y is a vector of saples
+#' tau is the quantile probability
+#' weight is the vector for each sample response 
+
+weighted.quantile=function(y,tau,weight)
+{
+  data=cbind(y=y,weight=weight)
+  data=data[order(data[,1]),]
+  data=data.frame(data)
+  total.weight=sum(weight)
+  f.hat=cumsum(data$weight)/total.weight
+  indice=which(f.hat>=tau)
+  return(data$y[min(indice)])
+}
 
 #' Direct Method and
 #' We wan to use difference estimator 
 #' Difference estimator also use the auxilary information\
 #' So we want to compare with callibartion method
-compare=function(pop,n,tau)
+compare=function(pop,n,tau,tau0)
 {
   N=dim(pop)[1]
   rho=cor(pop)[1,2]
+  pop.regression=rq(Y~X-1,tau=tau0,data=pop)
+  beta.star=pop.regression$coef
+  pop.q.mean=mean(pop[,1]*beta.star)
   D=sapply(1:1000,function(o) {
     A=pop[sample(1:N,n,replace=FALSE),]
     weights=rep(N/n,n)
-    r.regression=rq(Y~X-1,tau=tau,data=A,weights=weights)
-    y.hat=r.regression$coef*A[,1]
-    y=sapply(A[,1],function(x) qnorm(tau,mean=rho*x,sd=sqrt(1-rho^2)))
-    mse1=sum((y-y.hat)^2)/n
-    y.hat2=y.hat+(mean(r.regression$coef*pop[,1])-mean(y.hat))
-    mse2=sum((y-y.hat2)^2)/n
-    return(c(mse1,mse2))
+    r.regression=rq(Y~X-1,tau=tau0,data=A,weights=weights)
+    q.direct=weighted.quantile(A[,2],tau,weights)
+    q.true=quantile(pop[,2],probs=tau)
+    mse1=(q.direct-q.true)^2
+    q.diff=q.direct+(pop.q.mean-mean(beta.star*A[,1]))
+    mse2=(q.diff-q.true)^2
+    B=sum(r.regression$coef*pop[,1]*(pop[,1]*beta.star-pop.q.mean))/sum((pop[,1]*beta.star-pop.q.mean)^2)
+    q.emp=q.direct+(pop.q.mean-mean(beta.star*A[,1]))*B
+    mse3=(q.emp-q.true)^2
+    return(c(mse1,mse2,mse3))
   })
   
   apply(D,1,mean)
 }
 
 tau=c(0.1,0.3,0.5,0.7,0.9)
-mse.d1=sapply(tau,function(tau) compare(pop1,n,tau))
-mse.d2=sapply(tau,function(tau) compare(pop2,n,tau))
+mse=sapply(tau,function(tau) compare(pop1,n,tau,0.3))
+mse[1,]/mse[3,]
+mse[2,]/mse[3,]
 
 
 
 
-
-
-diff.estimator=function(pop,n,tau)
-{
-  N=dim(pop)[1]
-  
-  
-  
-  
-  
-  
-}
 
 
 

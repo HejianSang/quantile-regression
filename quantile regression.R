@@ -74,7 +74,9 @@ mse=sapply(tau,function(tau) compare(pop1,n,tau,0.3))
 mse[1,]/mse[3,]
 mse[2,]/mse[3,]
 
-
+mse1=sapply(tau,function(tau) compare(pop1,n,tau,0.7))
+mse1[1,]/mse1[3,]
+mse1[2,]/mse1[3,]
 
 
 

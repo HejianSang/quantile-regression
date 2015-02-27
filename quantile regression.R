@@ -2,6 +2,8 @@ library(quantreg)
 library(mvtnorm)
 library(plyr)
 library(ggplot2)
+library(KernSmooth)
+library(rootSolve)
 #'The simulation studies were conducted to compare the performance of calibrated
 #' quantile estimator to those of direct estimator and difference estimator.
 #' Two finite populations of size N = 1000 were generated from bivariate
@@ -136,13 +138,124 @@ png(filename="tau_7.png")
 qplot(tau0,mse.c,data=mse.cb,geom="point")
 dev.off()
 
+
+
+###################################################################
+#' function to use callibrartion to estimate the quantile
+Fw=function(y,theta,weight)
+{
+  sum(weight[y<=as.numeric(theta)])/sum(weight)
+  
+}
+#####################################################
+#' max emperical likelihood to get the weights
+max.weight=function(q,d,q.N.bar)
+{
+  n=length(q)
+  f=function(lambda)
+  {
+    c(sum(d/(lambda[1]+lambda[2]*q))+1,sum((d/(lambda[1]+lambda[2]*q)*q))+q.N.bar)
+  }
+  lambda=multiroot(f,start=c(-1,-1),maxiter=100)$root
+  -d/(lambda[1]+q*lambda[2])
+#   w=-d/(lambda[1]+q*lambda[2])
+#   w[w<0]=0
+#   w
+}
 #########################################################################
 #' Variance estimation
 #' We have two method to approach the variance 
 #' The first one is nonparametric method
+#' We need use kernel to estimate the density at the quantiel we estimate
+#' We prefer the normal kernel 
+#' of course we can try other kernel
+
+var.kernel=function(pop,n,tau,tau0)
+{
+  N=dim(pop)[1]
+  #' SRS samples
+  A=pop[sample(1:N,n,replace=FALSE),]
+  #' quantile regression
+  weights=rep(N/n,n)
+  PI=rep(n/N,n)
+  r.regression=rq(Y~X,tau=tau0,data=A,weights=weights)
+  q.N.bar=
+  q.direct=weighted.quantile(A[,2],tau,weights)
+  theta.w=q.direct+(sum(r.regression$coef*pop[,1])-sum(weights*(r.regression$coef*A[,1])))/N
+  q=r.regression$coef*A[,1]
+  Den=matrix(0,2,2)
+  Num=matrix(0,2,1)
+  for(i in  1:n)
+  {
+    Den=Den+weights[i]*matrix(c(1,q[i],q[i],q[i]^2),2,2)
+    Num=Num+weights[i]*matrix(c(1,q[i]),2,1)*(A[i,2]<theta.w)
+  }
+  C=solve(Den)%*%Num
+  z=(A[,2]<theta.w)-matrix(c(rep(1,n),q),n,2)%*%C
+  PIJ=matrix(n*(n-1)/N/(N-1),n,n)
+  diag(PIJ)=1/weights
+  V.hat=var(z)
+#   for(i in 1:n)
+#     for(j in 1:n)
+#       V.hat=V.hat+(PIJ[i,j]-PI[i]*PI[j])*z[i]*z[j]/(PIJ[i,j]*PI[i]*PI[j])
+  #' to estimate the density of y
+#   density=bkde(A[,2],kernel="normal")
+#   index=min(which(density$x>theta.w))
+#   f.theta=(density$y[index]+density$y[index-1])/2
+  temp=matrix(c(rep(1,N),pop[,1]),N,2)
+  q.N.bar=mean(temp%*%t(t( r.regression$coef)))
+  h=2*sqrt(V.hat)
+  w=max.weight(q,weights,q.N.bar)
+  f.theta=(Fw(A[,2],theta.w+h,w)-Fw(A[,2],theta.w-h,w))/(2*h)
+  V.theta=V.hat/f.theta^2
+  return(list(theta.w=theta.w,V.hat=V.hat,V.theta=V.theta))
+  
+}
+
+var.kernel(pop1,100,0.5,0.5)
+
+#' To calculate the bias of the variance estimate
+#' We repeat the procedure 5000 times
+#' We get th 5000 theta estimations and variance estimations
+#' we use the mean of variance estimations as expected variance
+#' we use 50000 theta to calculate v(theta)
+r=sapply(1:5000,function(o) var.kernel(pop1,100,0.5,0.5))
+E.V.hat=mean(unlist(r[3,]))
+V.true=var(unlist(r[1,]))
+(E.V.hat/V.true-1)*100
 
 
 
+######################################################
+#' Wooddruff method
+wooddruff=function(pop,n,tau,tau0)
+{
+  N=dim(pop)[1]
+  #' SRS samples
+  A=pop[sample(1:N,n,replace=FALSE),]
+  #' quantile regression
+  weights=rep(N/n,n)
+  PI=rep(n/N,n)
+  r.regression=rq(Y~X,tau=tau0,data=A,weights=weights)
+  q.N.bar=
+    q.direct=weighted.quantile(A[,2],tau,weights)
+  theta.w=q.direct+(sum(r.regression$coef*pop[,1])-sum(weights*(r.regression$coef*A[,1])))/N
+  q=r.regression$coef*A[,1]
+  Den=matrix(0,2,2)
+  Num=matrix(0,2,1)
+  for(i in  1:n)
+  {
+    Den=Den+weights[i]*matrix(c(1,q[i],q[i],q[i]^2),2,2)
+    Num=Num+weights[i]*matrix(c(1,q[i]),2,1)*(A[i,2]<theta.w)
+  }
+  C=solve(Den)%*%Num
+  z=(A[,2]<theta.w)-matrix(c(rep(1,n),q),n,2)%*%C
+  PIJ=matrix(n*(n-1)/N/(N-1),n,n)
+  diag(PIJ)=1/weights
+  V.hat=var(z)
+  tau.L=tau-2*sqrt(V.hat)
+  tau.U=tau+2*sqrt(V.hat)
+}
 
 
 

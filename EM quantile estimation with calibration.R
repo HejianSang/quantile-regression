@@ -102,6 +102,29 @@ possible_pat=function(sample_data)
   pat
 }
 
+count1=function(y_prime,At)
+{
+  l=length(y_prime)
+  A=unique(as.numeric(At))
+  if(!is.na(y_prime[1]))
+    temp=At[pop_group[At[,1],1]==y_prime[1],1] ### index: to store index which is possible to satisfy this pattern
+  else temp=A[!A%in%At[,1]]
+  for(i in 2:l)
+  {
+    if(!is.na(y_prime[i]))
+    {
+      o=At[pop_group[At[,i],i]==y_prime[i],i]
+      temp=o[o%in%temp]
+    }
+    else
+    {
+      S=A[!A%in%At[,i]]
+      temp=S[S%in% temp]
+    }
+    
+  }
+  return(length(temp))
+}
 
 
 EM=function(maxiter,pop_group,At,joint_prob)

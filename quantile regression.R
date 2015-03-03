@@ -221,7 +221,7 @@ var.kernel(pop1,100,0.5,0.5)
 #' we use 50000 theta to calculate v(theta)
 r1=sapply(1:5000,function(o) var.kernel(pop1,100,0.5,0.5))
 E.V.hat1=mean(unlist(r1[3,]))
-V.true1=var(unlist(1r[1,]))
+V.true1=var(unlist(r1[1,]))
 (E.V.hat1/V.true1-1)*100
 
 

@@ -161,8 +161,6 @@ em.est=function(tau,A,M,G)
   n=sum(!is.na(A[,2]))
   N=length(A[,1])
   X.pop=category1(A,10)[,1]
-  for(i in 1:M)
-  {
     index=sample(1:N,n,replace=FALSE)
     sample_data=A
     sample_data[!(1:N)%in% index,1]=NA
@@ -174,15 +172,12 @@ em.est=function(tau,A,M,G)
     joint_prob=data.frame(pat,prob=rep(1/dim(pat)[1],dim(pat)[1]))
     X.pop=sapply(A[,1],function(x) group(x,cate.all$point[1,]))
     margin.X=as.numeric(table(X.pop)/N)
-    
-  }
-  
-  
-  
-  
-  
-  
-  
+    joint.prob=EM(M,joint_prob,rotate.cate,cate)
+  #' Do calibration
+  #' Use X.margin
+  cali.weight=margin.X/(sapply(1:G,function(x) sum(joint.prob[joint.prob[,1]==x,"prob"])))
+  margin.y=sapply(1:10,function(x) sum(cali.weight*(joint.prob[joint.prob[,2]==x,"prob"])))
+  return(data.frame(group=1:G,margin=margin.y))
   
   
 }

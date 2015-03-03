@@ -194,7 +194,7 @@ var.kernel=function(pop,n,tau,tau0)
   z=(A[,2]<theta.w)-matrix(c(rep(1,n),q),n,2)%*%C
   PIJ=matrix(n*(n-1)/N/(N-1),n,n)
   diag(PIJ)=1/weights
-  V.hat=var(z)
+  V.hat=var(z)*(1-n/N)/n
 #   for(i in 1:n)
 #     for(j in 1:n)
 #       V.hat=V.hat+(PIJ[i,j]-PI[i]*PI[j])*z[i]*z[j]/(PIJ[i,j]*PI[i]*PI[j])
@@ -219,15 +219,31 @@ var.kernel(pop1,100,0.5,0.5)
 #' We get th 5000 theta estimations and variance estimations
 #' we use the mean of variance estimations as expected variance
 #' we use 50000 theta to calculate v(theta)
-r=sapply(1:5000,function(o) var.kernel(pop1,100,0.5,0.5))
-E.V.hat=mean(unlist(r[3,]))
-V.true=var(unlist(r[1,]))
-(E.V.hat/V.true-1)*100
+r1=sapply(1:5000,function(o) var.kernel(pop1,100,0.5,0.5))
+E.V.hat1=mean(unlist(r1[3,]))
+V.true1=var(unlist(1r[1,]))
+(E.V.hat1/V.true1-1)*100
 
 
 
 ######################################################
 #' Wooddruff method
+#' Fw inverse quantile function with weights
+Fw.quant=function(w,tau,tau0,A,pop)
+{
+  N=dim(pop)[1]
+  r.regression=rq(Y~X,tau=tau0,data=A,weights=w)
+  q.direct=weighted.quantile(A[,2],tau,w)
+  theta.w=q.direct+(sum(r.regression$coef*pop[,1])-sum(w*(r.regression$coef*A[,1])))/N
+  theta.w
+}
+
+
+
+
+
+
+
 wooddruff=function(pop,n,tau,tau0)
 {
   N=dim(pop)[1]
@@ -237,8 +253,7 @@ wooddruff=function(pop,n,tau,tau0)
   weights=rep(N/n,n)
   PI=rep(n/N,n)
   r.regression=rq(Y~X,tau=tau0,data=A,weights=weights)
-  q.N.bar=
-    q.direct=weighted.quantile(A[,2],tau,weights)
+  q.direct=weighted.quantile(A[,2],tau,weights)
   theta.w=q.direct+(sum(r.regression$coef*pop[,1])-sum(weights*(r.regression$coef*A[,1])))/N
   q=r.regression$coef*A[,1]
   Den=matrix(0,2,2)
@@ -252,11 +267,18 @@ wooddruff=function(pop,n,tau,tau0)
   z=(A[,2]<theta.w)-matrix(c(rep(1,n),q),n,2)%*%C
   PIJ=matrix(n*(n-1)/N/(N-1),n,n)
   diag(PIJ)=1/weights
-  V.hat=var(z)
-  tau.L=tau-2*sqrt(V.hat)
-  tau.U=tau+2*sqrt(V.hat)
+  V.hat=var(z)*(1-n/N)/n
+  tau.L=as.numeric(tau-2*sqrt(V.hat))
+  tau.U=as.numeric(tau+2*sqrt(V.hat))
+  theta.L=Fw.quant(weights,tau.L,tau.L,A,pop)
+  theta.U=Fw.quant(weights,tau.U,tau.U,A,pop)
+  V.theta=(theta.U-theta.L)^2/4
+  return(list(theta.w=theta.w,V.hat=V.hat,V.theta=V.theta))
 }
 
+wooddruff(pop1,100,0.5,0.5)
 
-
-
+r=sapply(1:5000,function(o) wooddruff(pop1,100,0.5,0.5))
+E.V.hat=mean(unlist(r[2,]))
+V.true=var(unlist(r[1,]))
+(E.V.hat/V.true-1)*100

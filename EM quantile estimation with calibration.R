@@ -79,7 +79,7 @@ category1=function(y,G)
     for(j in 1:dim(y)[2])
       if(!is.na(yc[i,j]))
       yc[i,j]=group(y[i,j],temp[j,])
-  return(group=yc)
+  return(list(group=yc,point=temp))
 }
 
 ### Function to find the poosible patterns in sample. 
@@ -102,46 +102,31 @@ possible_pat=function(sample_data)
   pat
 }
 
-count1=function(y_prime,At)
+count=function(y_prime,rotate.cate)
 {
-  l=length(y_prime)
-  A=unique(as.numeric(At))
-  if(!is.na(y_prime[1]))
-    temp=At[pop_group[At[,1],1]==y_prime[1],1] ### index: to store index which is possible to satisfy this pattern
-  else temp=A[!A%in%At[,1]]
-  for(i in 2:l)
-  {
-    if(!is.na(y_prime[i]))
+  y_prime[is.na(y_prime)]=0
+  temp=apply(rotate.cate,1,function(x)
     {
-      o=At[pop_group[At[,i],i]==y_prime[i],i]
-      temp=o[o%in%temp]
-    }
-    else
-    {
-      S=A[!A%in%At[,i]]
-      temp=S[S%in% temp]
-    }
-    
-  }
-  return(length(temp))
+    x[is.na(x)]=0
+    all(x==y_prime)
+  })
+  sum(temp)
 }
 
 
-EM=function(maxiter,pop_group,At,joint_prob)
+EM=function(maxiter,joint_prob,rotate.cate,cate)
 {
-  G=max(pop_group)
-  N=dim(pop_group)[1]
-  time=dim(pop_group)[2]
+  G=max(rotate.cate,na.rm=T)
+  N=dim(cate)[1]
+  time=dim(cate)[2]
   p=dim(joint_prob)[1]
   weight=1
-  trace=NULL
-  ### We have 5^5=3125 patterns
   for(t in 1:maxiter)
   {
     joint=sapply(1:p,function(i) 
     {
       y_prime=as.numeric(joint_prob[i,1:time])
-      nt=count(y_prime)*weight
+      nt=count(y_prime,rotate.cate)*weight
       for(j in 1:time)
       {
         if(joint_prob[i,time+1]==0)
@@ -150,11 +135,11 @@ EM=function(maxiter,pop_group,At,joint_prob)
         y_prime=as.numeric(joint_prob[i,1:time])
         y_prime[j]=NA
         index=index[-j]
-        if(count(y_prime)!=0)
+        if(count(y_prime,rotate.cate)!=0)
         {
-          nplus=count(y_prime)*weight*joint_prob[i,time+1]/ifelse(
-            sum(joint_prob[apply(joint_prob[,index],1,function(x) all(x==y_prime[index])),time+1])==0,1,
-            sum(joint_prob[apply(joint_prob[,index],1,function(x) all(x==y_prime[index])),time+1]))
+          nplus=count(y_prime,rotate.cate)*weight*joint_prob[i,time+1]/ifelse(
+            sum(joint_prob[sapply(joint_prob[,index],function(x) all(x==y_prime[index])),time+1])==0,1,
+            sum(joint_prob[sapply(joint_prob[,index],function(x) all(x==y_prime[index])),time+1]))
           
         }
         else nplus=0
@@ -164,26 +149,31 @@ EM=function(maxiter,pop_group,At,joint_prob)
     })
     #     if(sum((joint-joint_prob$prob)^2)<0.1)
     #       break
-    joint_prob$prob=joint
-    trace=cbind(trace,joint)
+    joint_prob$prob=joint/sum(joint)
     cat("total=",sum(joint),"\n")
     cat("t=",t,"\n")
   }
-  return(list(prob=joint_prob,trace=trace))
+  return(joint_prob)
 }
 
 em.est=function(tau,A,M,G)
 {
   n=sum(!is.na(A[,2]))
   N=length(A[,1])
+  X.pop=category1(A,10)[,1]
   for(i in 1:M)
   {
     index=sample(1:N,n,replace=FALSE)
     sample_data=A
     sample_data[!(1:N)%in% index,1]=NA
-    cate=category1(sample_data,10)
-    pat=data.frame(possible_pat(sample_data))
+    cate.all=category1(sample_data,10)
+    cate=cate.all$group
+    rotate=sample_data[apply(is.na(sample_data),1,sum)<2,]
+    rotate.cate=cate[apply(is.na(cate),1,sum)<2,]
+    pat=data.frame(possible_pat(rotate.cate))
     joint_prob=data.frame(pat,prob=rep(1/dim(pat)[1],dim(pat)[1]))
+    X.pop=sapply(A[,1],function(x) group(x,cate.all$point[1,]))
+    margin.X=as.numeric(table(X.pop)/N)
     
   }
   

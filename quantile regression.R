@@ -279,7 +279,7 @@ wooddruff=function(pop,n,tau,tau0)
 wooddruff(pop2,100,0.5,0.5)
 
 r=sapply(1:5000,function(o) wooddruff(pop2,100,0.2,0.2))
-E.V.hat=mean(unlist(r[2,]))
+E.V.hat=mean(unlist(r[3,]))
 V.true=var(unlist(r[1,]))
 (E.V.hat/V.true-1)*100
 ############################################################

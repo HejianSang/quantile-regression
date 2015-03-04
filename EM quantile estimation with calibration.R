@@ -199,3 +199,4 @@ em.est=function(tau,A,M,G)
   min((temp$x[min((1:401)[temp$x>d[1]]):401])[cumsum(temp$y[min((1:401)[temp$x>d[1]]):401])*diff>left])
 }
 
+em.est(0.5,A,20,10)

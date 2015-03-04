@@ -176,9 +176,26 @@ em.est=function(tau,A,M,G)
   #' Do calibration
   #' Use X.margin
   cali.weight=margin.X/(sapply(1:G,function(x) sum(joint.prob[joint.prob[,1]==x,"prob"])))
-  margin.y=sapply(1:10,function(x) sum(cali.weight*(joint.prob[joint.prob[,2]==x,"prob"])))
-  
-  
-  
+  margin.y=NULL
+  for(j in 1:G)
+  {
+    m=0
+    for(i in 1:G)
+    {
+      m=m+cali.weight[i]*sum(joint.prob[joint.prob[,1]==i&joint.prob[,2]==j,"prob"])
+    }
+    margin.y=c(margin.y,m)
+  }
+   
+      
+  Dist=cumsum(margin.y)
+  index=max((1:G)[Dist<tau])
+  left=tau-Dist[index]
+  #'kernel smooth for group index +1
+  d=A[cate[,2]==index+1,2]
+  d=d[!is.na(A[cate[,2]==index+1,2])]
+  temp=bkde(d,kernel="norm")
+  diff=temp$x[2]-temp$x[1]
+  min((temp$x[min((1:401)[temp$x>d[1]]):401])[cumsum(temp$y[min((1:401)[temp$x>d[1]]):401])*diff>left])
 }
 

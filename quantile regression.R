@@ -61,7 +61,7 @@ compare=function(pop,n,tau,tau0)
     q.direct=weighted.quantile(A[,2],tau,weights)
     q.true=quantile(pop[,2],probs=tau)
     mse1=(q.direct-q.true)^2
-    q.diff=q.direct+(pop.q.mean-mean(beta.star*A[,1]))
+    q.diff=q.direct+(mean(r.regression$coef*pop[,1])-mean(r.regression$coef*A[,1]))
     mse2=(q.diff-q.true)^2
     B=sum(r.regression$coef*pop[,1]*(pop[,1]*beta.star-pop.q.mean))/sum((pop[,1]*beta.star-pop.q.mean)^2)
     q.emp=q.direct+(pop.q.mean-mean(beta.star*A[,1]))*B
@@ -179,10 +179,10 @@ var.kernel=function(pop,n,tau,tau0)
   weights=rep(N/n,n)
   PI=rep(n/N,n)
   r.regression=rq(Y~X,tau=tau0,data=A,weights=weights)
-  q.N.bar=
+  q.N.bar=mean(r.regression$coef[1]+r.regression$coef[2]*pop[,1])
   q.direct=weighted.quantile(A[,2],tau,weights)
-  theta.w=q.direct+(sum(r.regression$coef*pop[,1])-sum(weights*(r.regression$coef*A[,1])))/N
-  q=r.regression$coef*A[,1]
+  theta.w=q.direct+(sum(r.regression$coef[1]+r.regression$coef[2]*pop[,1])-sum(weights*(r.regression$coef[1]+r.regression$coef[2]*A[,1])))/N
+  q=r.regression$coef[1]+r.regression$coef[2]*A[,1]
   Den=matrix(0,2,2)
   Num=matrix(0,2,1)
   for(i in  1:n)
@@ -191,7 +191,7 @@ var.kernel=function(pop,n,tau,tau0)
     Num=Num+weights[i]*matrix(c(1,q[i]),2,1)*(A[i,2]<theta.w)
   }
   C=solve(Den)%*%Num
-  z=(A[,2]<theta.w)-matrix(c(rep(1,n),q),n,2)%*%C
+  z=(A[,2]<=theta.w)-matrix(c(rep(1,n),q),n,2)%*%C
   PIJ=matrix(n*(n-1)/N/(N-1),n,n)
   diag(PIJ)=1/weights
   V.hat=var(z)*(1-n/N)/n
@@ -206,9 +206,15 @@ var.kernel=function(pop,n,tau,tau0)
   q.N.bar=mean(temp%*%t(t( r.regression$coef)))
   h=2*sqrt(V.hat)
   w=max.weight(q,weights,q.N.bar)
-  f.theta=(Fw(A[,2],theta.w+h,w)-Fw(A[,2],theta.w-h,w))/(2*h)
+  f.theta1=(Fw(A[,2],theta.w+h,w)-Fw(A[,2],theta.w-h,w))/(2*h)
+#' f.theta could be 0
+#' That will cause the problem
+
+  density=bkde(A[,2],kernel="normal")
+  index=min(which(density$x>theta.w))
+  f.theta=(density$y[index]+density$y[index-1])/2
   V.theta=V.hat/f.theta^2
-  return(list(theta.w=theta.w,V.hat=V.hat,V.theta=V.theta))
+  return(list(theta.w=theta.w,V.hat=V.hat,V.theta=V.theta,f.theta1=f.theta1))
   
 }
 
@@ -234,7 +240,7 @@ Fw.quant=function(w,tau,tau0,A,pop)
   N=dim(pop)[1]
   r.regression=rq(Y~X,tau=tau0,data=A,weights=w)
   q.direct=weighted.quantile(A[,2],tau,w)
-  theta.w=q.direct+(sum(r.regression$coef*pop[,1])-sum(w*(r.regression$coef*A[,1])))/N
+  theta.w=q.direct+(sum(r.regression$coef[1]+r.regression$coef[2]*pop[,1])-sum(w*(r.regression$coef[1]+r.regression$coef[2]*A[,1])))/N
   theta.w
 }
 
@@ -254,8 +260,8 @@ wooddruff=function(pop,n,tau,tau0)
   PI=rep(n/N,n)
   r.regression=rq(Y~X,tau=tau0,data=A,weights=weights)
   q.direct=weighted.quantile(A[,2],tau,weights)
-  theta.w=q.direct+(sum(r.regression$coef*pop[,1])-sum(weights*(r.regression$coef*A[,1])))/N
-  q=r.regression$coef*A[,1]
+  theta.w=q.direct+(sum(r.regression$coef[1]+r.regression$coef[2]*pop[,1])-sum(weights*(r.regression$coef[1]+r.regression$coef[2]*A[,1])))/N
+  q=r.regression$coef[1]+r.regression$coef[2]*A[,1]
   Den=matrix(0,2,2)
   Num=matrix(0,2,1)
   for(i in  1:n)
@@ -268,15 +274,17 @@ wooddruff=function(pop,n,tau,tau0)
   PIJ=matrix(n*(n-1)/N/(N-1),n,n)
   diag(PIJ)=1/weights
   V.hat=var(z)*(1-n/N)/n
-  tau.L=as.numeric(tau-2*sqrt(V.hat))
-  tau.U=as.numeric(tau+2*sqrt(V.hat))
-  theta.L=Fw.quant(weights,tau.L,tau.L,A,pop)
-  theta.U=Fw.quant(weights,tau.U,tau.U,A,pop)
+  tau.L=as.numeric(tau-1.96*sqrt(V.hat))
+  tau.U=as.numeric(tau+1.96*sqrt(V.hat))
+  q.direct1=weighted.quantile(A[,2],tau.L,weights)
+  theta.L=q.direct1+(sum(r.regression$coef[1]+r.regression$coef[2]*pop[,1])-sum(w*(r.regression$coef[1]+r.regression$coef[2]*A[,1])))/N
+  q.direct2=weighted.quantile(A[,2],tau.U,weights)
+  theta.U=q.direct2+(sum(r.regression$coef[1]+r.regression$coef[2]*pop[,1])-sum(w*(r.regression$coef[1]+r.regression$coef[2]*A[,1])))/N
   V.theta=(theta.U-theta.L)^2/4
   return(list(theta.w=theta.w,V.hat=V.hat,V.theta=V.theta))
 }
 
-wooddruff(pop2,100,0.5,0.5)
+wooddruff(pop1,100,0.5,0.5)
 
 r=sapply(1:5000,function(o) wooddruff(pop2,100,0.2,0.2))
 E.V.hat=mean(unlist(r[3,]))

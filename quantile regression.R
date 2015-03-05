@@ -95,7 +95,6 @@ mse1[2,]/mse1[3,]
 compare.v2=function(pop,weights,tau,tau0)
 {
   N=dim(pop)[1]
-  rho=cor(pop)[1,2]
   n=length(weights)
 #   pop.regression=rq(Y~X-1,tau=tau0,data=pop)
 #   beta.star=pop.regression$coef
@@ -119,7 +118,7 @@ compare.v2=function(pop,weights,tau,tau0)
 }
 
 tau=c(0.1,0.3,0.5,0.7,0.9)
-mse=sapply(tau,function(tau) compare.v2(pop1,rep(N/n,n),tau,0.3))
+mse=sapply(tau,function(tau) compare.v2(pop1,rep(N/n,n),tau,tau))
 mse[1,]/mse[3,]
 
 ########################################################################
@@ -139,12 +138,19 @@ compare.v3=function(pop,tau)
     q.direct=weighted.quantile(A[,2],tau,weights)
     q.true=quantile(pop[,2],probs=tau)
     mse1=(q.direct-q.true)^2
-    q.diff=q.direct+(sum(coef[1,3]+coef[2,3]*pop[,1])-sum(weights*(coef[1,3]+coef[2,3]**A[,1])))/N
+    q.diff=q.direct+(sum(coef[1,3]+coef[2,3]*pop[,1])-sum(weights*(coef[1,3]+coef[2,3]*A[,1])))/N
     mse2=(q.diff-q.true)^2
     q.more=q.direct
     for( i in 1:length(tau0))
-      q.more=q.more+(sum(coef[1,i]+coef[2,i]*pop[,1])-sum(weights*(coef[1,i]+coef[2,i]**A[,1])))/N
+      q.more=q.more+(sum(coef[1,i]+coef[2,i]*pop[,1])-sum(weights*(coef[1,i]+coef[2,i]*A[,1])))/N
     mse3=(q.more-q.true)^2
+    X=cbind(rep(1,N),pop[,1],pop[,1]^2,pop[,1]^3,pop[,1]^4)
+    x=cbind(rep(1,n),A[,1],A[,1]^2,A[,1]^3,A[,1]^4)
+    x=data.frame(x)
+    data=cbind(x,y=A[,2])
+    beta=lm(y~X2+X3+X4+X5,data=data)$coef
+    q.mom=q.direct+sum((apply(X,2,mean)-apply(x,2,mean))*beta)
+    mse4=(q.mom-q.true)^2
     return(c(mse1,mse2,mse3))
   })
   
@@ -152,9 +158,9 @@ compare.v3=function(pop,tau)
 }  
   
 tau=c(0.1,0.3,0.5,0.7,0.9)
-mse=sapply(tau,function(tau) compare.v3(pop1,tau))
-mse1[3,]/mse1[1,]
-mse1[2,]/mse1[1,] 
+mse3=sapply(tau,function(tau) compare.v3(pop1,tau))
+mse3[3,]/mse3[1,]
+mse3[2,]/mse3[1,] 
   
   
   

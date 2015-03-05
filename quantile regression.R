@@ -103,7 +103,7 @@ compare.v2=function(pop,weights,tau,tau0)
   D=sapply(1:1000,function(o) {
     A=pop[sample(1:N,n,replace=FALSE),]
     weights=weights
-    r.regression=rq(Y~X,tau=tau0,data=A,weights=weights)
+    r.regression=rq(Y~X-1,tau=tau0,data=A,weights=weights)
     q.direct=weighted.quantile(A[,2],tau,weights)
     q.true=quantile(pop[,2],probs=tau)
     mse1=(q.direct-q.true)^2
@@ -121,6 +121,53 @@ compare.v2=function(pop,weights,tau,tau0)
 tau=c(0.1,0.3,0.5,0.7,0.9)
 mse=sapply(tau,function(tau) compare.v2(pop1,rep(N/n,n),tau,0.3))
 mse[1,]/mse[3,]
+
+########################################################################
+#' We also want to use more pre quantiles as calibrartion like tao0=c(0.1,0.2,...,0.9)
+#' We can also try the moment calibrartion
+#' We compare them with the regression estimators or calibrartion estimators
+compare.v3=function(pop,tau)
+{
+  N=dim(pop)[1]
+  D=sapply(1:1000,function(o) {
+    A=pop[sample(1:N,n,replace=FALSE),]
+    weights=rep(N/n,n)
+    coef=NULL
+    tau0=seq(0.1,0.9,0.2)
+    for(i in 1:length(tau0))
+      coef=cbind(coef,rq(Y~X,tau=tau0,data=A,weights=weights)$coef)
+    q.direct=weighted.quantile(A[,2],tau,weights)
+    q.true=quantile(pop[,2],probs=tau)
+    mse1=(q.direct-q.true)^2
+    q.diff=q.direct+(sum(coef[1,3]+coef[2,3]*pop[,1])-sum(weights*(coef[1,3]+coef[2,3]**A[,1])))/N
+    mse2=(q.diff-q.true)^2
+    q.more=q.direct
+    for( i in 1:length(tau0))
+      q.more=q.more+(sum(coef[1,i]+coef[2,i]*pop[,1])-sum(weights*(coef[1,i]+coef[2,i]**A[,1])))/N
+    mse3=(q.more-q.true)^2
+    return(c(mse1,mse2,mse3))
+  })
+  
+  apply(D,1,mean)
+}  
+  
+tau=c(0.1,0.3,0.5,0.7,0.9)
+mse=sapply(tau,function(tau) compare.v3(pop1,tau))
+mse1[3,]/mse1[1,]
+mse1[2,]/mse1[1,] 
+  
+  
+  
+  
+  
+  
+
+
+
+
+
+
+
 ############################################################################
 #' To estimate the population quantile at tau1, 
 #' what tau we use to do callibrartion is most effective?

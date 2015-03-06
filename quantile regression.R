@@ -151,7 +151,7 @@ compare.v3=function(pop,tau)
     beta=lm(y~X2+X3+X4+X5,data=data)$coef
     q.mom=q.direct+sum((apply(X,2,mean)-apply(x,2,mean))*beta)
     mse4=(q.mom-q.true)^2
-    return(c(mse1,mse2,mse3))
+    return(c(mse1,mse2,mse3,mse4))
   })
   
   apply(D,1,mean)
@@ -161,8 +161,8 @@ tau=c(0.1,0.3,0.5,0.7,0.9)
 mse3=sapply(tau,function(tau) compare.v3(pop1,tau))
 mse3[3,]/mse3[1,]
 mse3[2,]/mse3[1,] 
-  
-  
+mse3[4,]/mse3[1,] 
+ 
   
   
   

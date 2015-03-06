@@ -1,2 +1,2 @@
-# quantile-regression
-Use callibrartion to get quantile regression
+# quantile-estimation
+Use callibrartion to get quantile estimation

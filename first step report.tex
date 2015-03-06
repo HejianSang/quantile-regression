@@ -73,6 +73,67 @@ The ratio estimator is $$ \hat\theta_{ratio}= \theta_{x,\tau}\frac{\hat\theta_{w
  
  Note: We use the same $\tau_0=0.5$ to get the difference estimator.
  
+ \begin{table}[H]
+ 	\centering
+ 	\begin{tabular}{rrrrrr}
+ 		\hline
+ 		& $\tau=0.1$ & $\tau=0.3$ & $\tau=0.5$ & $\tau=0.7$ & $\tau=0.9$ \\ 
+ 		\hline
+ 		Difference estimator RE & 0.8380 & 0.7203 & 0.7767 & 0.8469 & 0.8599 \\ 
+ 		ratio estimator RE & 1.2040 & 2.2434 & 7.7272 & 2.1759 & 1.9842 \\ 
+ 		Moment estimator RE & 0.8392 & 0.7665 & 0.8253 & 0.8852 & 0.9038 \\ 
+ 		\hline
+ 	\end{tabular}
+ 	\caption{RE for different estimators for $\rho=0.6$}
+ \end{table}
  
+ \begin{table}[H]
+ 	\centering
+ 	\begin{tabular}{rrrrrr}
+ 		\hline
+ 		& $\tau=0.1$ & $\tau=0.3$ & $\tau=0.5$ & $\tau=0.7$ & $\tau=0.9$ \\ 
+ 		\hline
+ 		Difference estimator RE & 0.7419 & 0.5571 & 0.4283 & 0.5278 & 0.7796 \\ 
+ 		ratio estimator RE & 0.5734 & 0.5104 & 15.6849 & 0.8469 & 0.8919 \\ 
+ 		Moment estimator RE & 0.7390 & 0.5520 & 0.4329 & 0.5392 & 0.7891 \\ 
+ 		\hline
+ 	\end{tabular}
+ 	\caption{RE for different estimators for $\rho=0.9$}
+ \end{table}
+ \begin{itemize}
+ 	\item Both difference estimator and moment estimator do better than direct estimator.
+ 	\item Ratio estimator is worse than estimator than the direct estimator. Especially at $\tau=0.5$ . That is because the quantile at $\tau=0.5$ is very closed to 0. So bias-corrected ratio estimator may have a better estimation.
+ 	\item Difference estimator is best in these estimators.
+ \end{itemize}
+ 
+ \section{Variance Estimation for difference estimator}
+ 
+In the paper, we have two method to get the variance estimator for quantile estimator.
+
+For method one: I correct two mistakes in the paper. I get the 
+\begin{table}[H]
+	\begin{tabular}{rrrrrr}
+		\hline
+		source & $\tau=0.1$ & $\tau=0.3$ & $\tau=0.5$ & $\tau=0.7$ & $\tau=0.9$\\
+		\hline
+		$\frac{E(\hat V)}{V}-1$ $\rho=0.6$ & 5.84\% & 21.51\% & 34.79824\% & 11.16\% &  10.86\%\\
+		$\frac{E(\hat V)}{V}-1$ $\rho=0.9$ & -11.51\% & -8.18\% & 24.20\% & 23.66\% & 0.2718\%\\
+		\hline
+	\end{tabular}
+	\caption{Relative bias for variance estimations}
+\end{table}
+ 
+For method two:
+ \begin{table}[H]
+ 	\begin{tabular}{rrrrrr}
+ 		\hline
+ 		source & $\tau=0.1$ & $\tau=0.3$ & $\tau=0.5$ & $\tau=0.7$ & $\tau=0.9$\\
+ 		\hline
+ 		$\frac{E(\hat V)}{V}-1$ $\rho=0.6$ &344.69\% & 320.10\% & 322.11\% & 303.28\% &  495.60\%\\
+ 		$\frac{E(\hat V)}{V}-1$ $\rho=0.9$ & 355.76\% & 283.12\% & 315.44\% & 329.97\% & 388.80\%\\
+ 		\hline
+ 	\end{tabular}
+ 	\caption{Relative bias for variance estimations from Woodruff method}
+ \end{table}
  
 \end{document}

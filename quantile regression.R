@@ -164,11 +164,22 @@ mse3=sapply(tau,function(tau) compare.v3(pop1,tau))
 mse3[3,]/mse3[1,]
 mse3[2,]/mse3[1,] 
 mse3[4,]/mse3[1,] 
+result=matrix(0,3,5)
+ result[1,]= mse3[2,]/mse3[1,] 
+result[2,]=mse3[3,]/mse3[1,]
+result[3,]=mse3[4,]/mse3[1,] 
+
  
-  
-  
-  
-  
+tau=c(0.1,0.3,0.5,0.7,0.9)
+mse3=sapply(tau,function(tau) compare.v3(pop2,tau))
+mse3[3,]/mse3[1,]
+mse3[2,]/mse3[1,] 
+mse3[4,]/mse3[1,] 
+result=matrix(0,3,5)
+result[1,]= mse3[2,]/mse3[1,] 
+result[2,]=mse3[3,]/mse3[1,]
+result[3,]=mse3[4,]/mse3[1,] 
+
 
 
 
@@ -280,7 +291,7 @@ var.kernel(pop1,100,0.5,0.5)
 #' We get th 5000 theta estimations and variance estimations
 #' we use the mean of variance estimations as expected variance
 #' we use 50000 theta to calculate v(theta)
-r1=sapply(1:5000,function(o) var.kernel(pop1,100,0.5,0.5))
+r1=sapply(1:5000,function(o) var.kernel(pop2,100,0.9,0.5))
 E.V.hat1=mean(unlist(r1[3,]))
 V.true1=var(unlist(r1[1,]))
 (E.V.hat1/V.true1-1)*100
@@ -312,6 +323,7 @@ wooddruff=function(pop,n,tau,tau0)
   A=pop[sample(1:N,n,replace=FALSE),]
   #' quantile regression
   weights=rep(N/n,n)
+  w=weights
   PI=rep(n/N,n)
   r.regression=rq(Y~X,tau=tau0,data=A,weights=weights)
   q.direct=weighted.quantile(A[,2],tau,weights)
@@ -341,7 +353,7 @@ wooddruff=function(pop,n,tau,tau0)
 
 wooddruff(pop1,100,0.5,0.5)
 
-r=sapply(1:5000,function(o) wooddruff(pop2,100,0.2,0.2))
+r=sapply(1:5000,function(o) wooddruff(pop2,100,0.9,0.5))
 E.V.hat=mean(unlist(r[3,]))
 V.true=var(unlist(r[1,]))
 (E.V.hat/V.true-1)*100

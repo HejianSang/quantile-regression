@@ -140,10 +140,12 @@ compare.v3=function(pop,tau)
     mse1=(q.direct-q.true)^2
     q.diff=q.direct+(sum(coef[1,3]+coef[2,3]*pop[,1])-sum(weights*(coef[1,3]+coef[2,3]*A[,1])))/N
     mse2=(q.diff-q.true)^2
-    q.more=q.direct
-    for( i in 1:length(tau0))
-      q.more=q.more+(sum(coef[1,i]+coef[2,i]*pop[,1])-sum(weights*(coef[1,i]+coef[2,i]*A[,1])))/N
-    mse3=(q.more-q.true)^2
+#     q.more=q.direct
+#     for( i in 1:length(tau0))
+#       q.more=q.more+(sum(coef[1,i]+coef[2,i]*pop[,1])-sum(weights*(coef[1,i]+coef[2,i]*A[,1])))/N
+    q.ratio=weighted.quantile(pop[,1],tau,rep(1,N))*weighted.quantile(
+      A[,2],tau,weights)/weighted.quantile(A[,1],tau,weights)
+    mse3=(q.ratio-q.true)^2
     X=cbind(rep(1,N),pop[,1],pop[,1]^2,pop[,1]^3,pop[,1]^4)
     x=cbind(rep(1,n),A[,1],A[,1]^2,A[,1]^3,A[,1]^4)
     x=data.frame(x)
